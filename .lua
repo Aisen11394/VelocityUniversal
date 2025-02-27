@@ -1,1 +1,86 @@
-loadstring("\112\114\105\110\116\40\34\108\111\99\97\108\32\112\108\97\121\101\114\115\32\61\32\103\97\109\101\58\71\101\116\83\101\114\118\105\99\101\40\39\80\108\97\121\101\114\115\39\41\10\108\111\99\97\108\32\108\112\108\114\32\61\32\112\108\97\121\101\114\115\46\76\111\99\97\108\80\108\97\121\101\114\10\108\111\99\97\108\32\108\97\115\116\67\70\44\32\115\116\111\112\44\32\104\101\97\114\116\98\101\97\116\67\111\110\110\101\99\116\105\111\110\10\108\111\99\97\108\32\99\104\97\114\97\99\116\101\114\32\61\32\108\112\108\114\46\67\104\97\114\97\99\116\101\114\32\111\114\32\108\112\108\114\46\67\104\97\114\97\99\116\101\114\65\100\100\101\100\58\87\97\105\116\40\41\10\108\111\99\97\108\32\104\117\109\97\110\111\105\100\32\61\32\99\104\97\114\97\99\116\101\114\58\87\97\105\116\70\111\114\67\104\105\108\100\40\34\72\117\109\97\110\111\105\100\34\41\10\108\111\99\97\108\32\114\111\111\116\80\97\114\116\32\61\32\99\104\97\114\97\99\116\101\114\58\87\97\105\116\70\111\114\67\104\105\108\100\40\34\72\117\109\97\110\111\105\100\82\111\111\116\80\97\114\116\34\41\10\108\111\99\97\108\32\102\97\108\108\83\112\101\101\100\32\61\32\45\55\53\10\108\111\99\97\108\32\115\112\101\101\100\66\111\111\115\116\32\61\32\53\48\10\108\111\99\97\108\32\102\97\108\108\68\117\114\97\116\105\111\110\32\61\32\48\46\50\10\108\111\99\97\108\32\98\111\111\115\116\68\117\114\97\116\105\111\110\32\61\32\49\10\108\111\99\97\108\32\109\97\120\70\111\114\99\101\32\61\32\49\48\48\48\48\10\10\108\111\99\97\108\32\102\117\110\99\116\105\111\110\32\115\116\97\114\116\40\41\10\32\32\32\32\104\101\97\114\116\98\101\97\116\67\111\110\110\101\99\116\105\111\110\32\61\32\103\97\109\101\58\71\101\116\83\101\114\118\105\99\101\40\39\82\117\110\83\101\114\118\105\99\101\39\41\46\72\101\97\114\116\98\101\97\116\58\67\111\110\110\101\99\116\40\102\117\110\99\116\105\111\110\40\41\10\32\32\32\32\32\32\32\32\105\102\32\110\111\116\32\115\116\111\112\32\116\104\101\110\10\32\32\32\32\32\32\32\32\32\32\32\32\108\97\115\116\67\70\32\61\32\114\111\111\116\80\97\114\116\46\67\70\114\97\109\101\10\32\32\32\32\32\32\32\32\101\110\100\10\32\32\32\32\101\110\100\41\10\32\32\32\32\114\111\111\116\80\97\114\116\58\71\101\116\80\114\111\112\101\114\116\121\67\104\97\110\103\101\100\83\105\103\110\97\108\40\39\67\70\114\97\109\101\39\41\58\67\111\110\110\101\99\116\40\102\117\110\99\116\105\111\110\40\41\10\32\32\32\32\32\32\32\32\115\116\111\112\32\61\32\116\114\117\101
+--P.S смотри код но не кради! это только для обучнния, а если хотите добавить в хаб оставьте ватермак: By weirdman2112
+local players = game:GetService('Players')
+local lplr = players.LocalPlayer
+local lastCF, stop, heartbeatConnection
+local character = lplr.Character or lplr.CharacterAdded:Wait()
+local humanoid = character:WaitForChild("Humanoid")
+local rootPart = character:WaitForChild("HumanoidRootPart")
+local fallSpeed = -75
+local speedBoost = 50 -- Можно менять
+local fallDuration = 0.2
+local boostDuration = 1 -- Можно менять
+local maxForce = 10000
+
+local function start()
+    heartbeatConnection = game:GetService('RunService').Heartbeat:Connect(function()
+        if not stop then
+            lastCF = rootPart.CFrame
+        end
+    end)
+    rootPart:GetPropertyChangedSignal('CFrame'):Connect(function()
+        stop = true
+        rootPart.CFrame = lastCF
+        game:GetService('RunService').Heartbeat:Wait()
+        stop = false
+    end)
+    humanoid.Died:Connect(function()
+        heartbeatConnection:Disconnect()
+    end)
+end
+
+local function setupJumpBoost()
+    humanoid.StateChanged:Connect(function(_, newState)
+        if newState == Enum.HumanoidStateType.Jumping then
+            while humanoid:GetState() == Enum.HumanoidStateType.Jumping do
+                wait()
+            end
+            if humanoid:GetState() == Enum.HumanoidStateType.Freefall then
+                local fallVelocity = Instance.new("BodyVelocity")
+                fallVelocity.Velocity = Vector3.new(0, fallSpeed, 0)
+                fallVelocity.MaxForce = Vector3.new(0, maxForce, 0)
+                fallVelocity.Parent = rootPart
+                spawn(function()
+                    wait(fallDuration)
+                    if fallVelocity.Parent then
+                        fallVelocity:Destroy()
+                    end
+                end)
+                humanoid.StateChanged:Connect(function(_, newerState)
+                    if newerState == Enum.HumanoidStateType.Landed then
+                        fallVelocity:Destroy()
+                        local direction = humanoid.MoveDirection.Magnitude > 0 and humanoid.MoveDirection.Unit or rootPart.CFrame.LookVector
+                        local speedVelocity = Instance.new("BodyVelocity")
+                        speedVelocity.Velocity = Vector3.new(direction.X * speedBoost, 0, direction.Z * speedBoost)
+                        speedVelocity.MaxForce = Vector3.new(maxForce, 0, maxForce)
+                        speedVelocity.Parent = rootPart
+                        spawn(function()
+                            wait(boostDuration)
+                            if speedVelocity.Parent then
+                                speedVelocity:Destroy()
+                            end
+                        end)
+                    end
+                end)
+            end
+        end
+    end)
+end
+
+lplr.CharacterAdded:Connect(function(newCharacter)
+    repeat game:GetService('RunService').Heartbeat:Wait() until newCharacter:FindFirstChildOfClass('Humanoid')
+    repeat game:GetService('RunService').Heartbeat:Wait() until newCharacter:FindFirstChildOfClass('Humanoid').RootPart
+    character = newCharacter
+    humanoid = character:FindFirstChildOfClass('Humanoid')
+    rootPart = character:FindFirstChildOfClass('Humanoid').RootPart
+    start()
+    setupJumpBoost()
+end)
+
+lplr.CharacterRemoving:Connect(function()
+    if heartbeatConnection then
+        heartbeatConnection:Disconnect()
+    end
+end)
+
+start()
+setupJumpBoost()
